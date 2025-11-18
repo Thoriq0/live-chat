@@ -1,6 +1,6 @@
 import { WebSocketServer } from "ws"; 
 
-const wss = new WebSocketServer({ port: 8080 }); 
+const wss = new WebSocketServer("support-vercel-production.up.railway.app"); 
 
 wss.on("connection", (socket) => { 
    console.log("Client connected");
@@ -21,4 +21,4 @@ wss.on("connection", (socket) => {
    }); 
    
 }); 
-console.log("WebSocket running on ws://localhost:8080");
+console.log("WebSocket running");
