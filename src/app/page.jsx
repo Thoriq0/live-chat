@@ -33,7 +33,7 @@ export default function MainChatPage() {
   const socketRef = useRef(null);
 
   useEffect(() => {
-    const socket = new WebSocket('ws://localhost:8080');
+    const socket = new WebSocket('wss://support-vercel-production.up.railway.app');
     socketRef.current = socket;
 
     socket.addEventListener("message", (event) => {
@@ -46,7 +46,15 @@ export default function MainChatPage() {
       }
     });
 
-    return () => socket.close();
+    socket.addEventListener("close", () => {
+      console.log("WS disconnected, reset messages");
+      setReceivedMessages([]); 
+    });
+  
+    return () => {
+      socket.close();
+      setReceivedMessages([]);
+    };
   }, []);
 
   const handleSend = (e) => {
