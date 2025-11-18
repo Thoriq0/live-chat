@@ -4,7 +4,7 @@ A real-time chat application built with **Next.js**, **Prisma**, **PostgreSQL**,
 
 ---
 
-Gw ada buat demo nya, yang pake method broadcast tapi nya lo bisa liat di branch broadcast ini sama. untuk akses user nya udah ada dihalaman login nya tinggal copas aja udah bisa login, ini link demo nya : live-chat-lake-psi.vercel.app
+Gw ada buat demo nya, yang pake method broadcast tapi nya lo bisa liat di branch broadcast ini sama. untuk akses user nya udah ada dihalaman login nya tinggal copas aja udah bisa login, ini link demo nya : [Live Chat Demo](https://live-chat-lake-psi.vercel.app)
 
 ## 🚀 Features
 
