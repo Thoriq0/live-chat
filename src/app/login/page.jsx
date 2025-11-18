@@ -28,7 +28,8 @@ export default function LoginPage() {
          <div className="bg-gray-800 shadow-lg rounded-2xl p-6 w-full max-w-sm text-gray-100">
             <h1 className="text-2xl font-bold mb-6 text-center">Login</h1>
             <p>User Login Ada 2 (userF & userS) dengan password (password123)</p>
-            <br>Lupa Buat Sign-out, Hapus Cookie Token aja</br>
+            <br/>
+            <p>Lupa Buat Sign-out, Hapus Cookie Token aja</p>
             <form onSubmit={handleSubmit} className="space-y-4">
                <div>
                   <label className="block text-sm font-medium mb-1">Username</label>
