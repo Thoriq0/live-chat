@@ -13,10 +13,6 @@ async function main() {
             username: "ahmad",
             password: "$2b$10$gBhE.4/J5IHRrA/eiQz8BeHp4Nv4PFbYbHGjDt9cnjYpVj8Mpasbu", // hash password123
          },
-         {
-            username: "husain",
-            password: "$2b$10$vYf1ffjqcS2V6DmiAuN8Uure3mOaZ3RzipVQR9.qQzVNem1SvJNWC", // hash password123
-         },
       ],
       skipDuplicates: true,
    });
