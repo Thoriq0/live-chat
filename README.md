@@ -188,4 +188,4 @@ npx prisma db push
 npx prisma migrate reset
 ```
 
-* Belum ada fitur logout gw lupa wkwkwkk 🤣. buat sign-out nya, cukup **hapus cookie token** tau kan cara nya 😏 ? .
+* Belum ada fitur logout sama handle gagal login gw lupa buat wkwkwkk 🤣. buat sign-out nya, cukup **hapus cookie token**.
