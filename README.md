@@ -1,28 +1,30 @@
 # Live Chat Application
 
-A real-time chat application built with **Next.js**, **Prisma**, **PostgreSQL**, and a custom **WebSocket server**. Proyek ini dibuat sebagai demo implementasi live chat fullstack dengan autentikasi sederhana, penyimpanan pesan, dan live update antar-user.
+A real-time chat application built with **Next.js**, **Prisma**, **PostgreSQL**, and a custom **WebSocket server**. Project ini dibuat sebagai demo implementasi live chat fullstack dengan autentikasi sederhana, penyimpanan pesan, dan live update antar-user.
 
 ---
 
 ## 🚀 Features
 
-* Realtime messaging menggunakan WebSocket
-* Autentikasi user sederhana
-* Chat history tersimpan di database PostgreSQL
-* UI sederhana dan responsif
-* Backend API menggunakan Next.js Route Handlers
-* Prisma ORM untuk akses database
+* 🔌 Realtime messaging menggunakan WebSocket
+* 🔐 Autentikasi user sederhana
+* 💾 Chat history tersimpan di PostgreSQL
+* ⚡ Next.js Route Handlers untuk API
+* 🟦 Prisma ORM
+* 🎨 UI sederhana & responsif
 
 ---
 
 ## 📦 Installation & Setup
 
-Ikuti langkah-langkah ini setelah melakukan **clone** repository.
+Ikuti langkah-langkah berikut setelah melakukan **clone** repository.
 
-### 1️⃣ Clone Repository
+---
+
+## 1️⃣ Clone Repository
 
 ```bash
-git clone <repo-url>
+git clone https://github.com/Thoriq0/live-chat.git
 cd live-chat
 ```
 
@@ -30,13 +32,11 @@ cd live-chat
 
 ## 2️⃣ Buat `.env` berdasarkan `.env.example`
 
-Buat file baru:
-
 ```bash
 cp .env.example .env
 ```
 
-Isi `.env` seperti berikut (sesuaikan database):
+Lalu isi `.env` seperti berikut (sesuaikan):
 
 ```env
 DATABASE_URL="postgresql://USER:PASSWORD@HOST/livechat"
@@ -71,12 +71,28 @@ npx prisma generate
 npx prisma db push
 ```
 
-### (Optional) Jalankan Seeder
+### Jalankan Seeder
 
-Jika memakai seeder custom:
+Seeder default nya ada 3 user (`thoriq`, `ahmad`, `husian`) dengan password:
+
+```
+password123
+```
+
+kalo pengen ingin custom password, pake `hash.js` yang ada di root, jangan lupa ubah value nya abis itu jalanin buat dapet bcrypt nya:
+
+```bash
+node hash.js
+```
+
+custome username nya ada di `prisma/seed.js`
+
+kalo udah jalankan seeder:
 
 ```bash
 npx prisma db seed
+# atau
+node prisma/seed.js
 ```
 
 ---
@@ -89,7 +105,7 @@ Di terminal terpisah:
 node websocket-server.js
 ```
 
-WebSocket default berjalan di:
+WebSocket berjalan di:
 
 ```
 ws://localhost:8080
@@ -103,7 +119,7 @@ ws://localhost:8080
 npm run dev
 ```
 
-Aplikasi akan berjalan di:
+Aplikasi berjalan di:
 
 ```
 http://localhost:3000
@@ -116,20 +132,20 @@ http://localhost:3000
 ```
 live-chat/
 ├── .env.example
-├── websocket-server.js       # WebSocket backend
+├── websocket-server.js # WebSocket backend
 ├── prisma/
-│   ├── schema.prisma         # Database schema
-│   └── migrations/           # (Optional) migration history
+│ ├── schema.prisma # Database schema
+│ └── migrations/ # (Optional) migration history
 ├── src/
-│   ├── app/
-│   │   ├── api/              # API Route Handlers
-│   │   ├── login/            # Login page
-│   │   └── page.js           # Main chat page
-│   ├── lib/
-│   │   └── prismadb.js       # Prisma client instance
-│   └── generated/            # Auto-generated Prisma client
+│ ├── app/
+│ │ ├── api/ # API Route Handlers
+│ │ ├── login/ # Login page
+│ │ └── page.js # Main chat page
+│ ├── lib/
+│ │ └── prismadb.js # Prisma client instance
+│ └── generated/ # Auto-generated Prisma client
 ├── public/
-│   └── assets
+│ └── assets
 ├── package.json
 ├── next.config.mjs
 └── README.md
@@ -139,29 +155,37 @@ live-chat/
 
 ## ✔ Ready to Develop
 
-Jika semua langkah sudah benar:
+Jalankan dua terminal:
 
-* buka dua terminal
-* terminal 1 → `npm run dev`
-* terminal 2 → `node websocket-server.js`
+**Terminal 1**
 
-Aplikasi akan siap digunakan.
+```bash
+npm run dev
+```
+
+**Terminal 2**
+
+```bash
+node websocket-server.js
+```
+
+Aplikasi siap digunakan.
 
 ---
 
 ## 📝 Notes
 
-* WebSocket harus berjalan agar pesan realtime muncul.
-* Jika database berubah, jalankan:
+* WebSocket **wajib** berjalan untuk realtime message.
+* Jika schema berubah:
 
 ```bash
 npx prisma db push
 ```
 
-* Untuk reset database:
+* Untuk reset database + seed:
 
 ```bash
 npx prisma migrate reset
 ```
 
-Gw lupa buat signout wkwkwk
+* Belum ada fitur logout gw lupa wkwkwkk 🤣. buat sign-out nya, cukup **hapus cookie token** tau kan cara nya 😏 ? .
