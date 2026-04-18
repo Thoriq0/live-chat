@@ -1,4 +1,4 @@
-import { PrismaClient } from "../src/generated/prisma/index.js";
+const { PrismaClient } = require("../src/generated/prisma/index.js");
 const prisma = new PrismaClient();
 
 async function main() {
@@ -21,5 +21,5 @@ async function main() {
 }
 
 main()
-   .catch(e => console.error(e))
+   .catch((e) => console.error(e))
    .finally(async () => await prisma.$disconnect());
