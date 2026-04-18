@@ -1,193 +1,95 @@
 # Live Chat Application
 
-A real-time chat application built with **Next.js**, **Prisma**, **PostgreSQL**, and a custom **WebSocket server**. Project ini dibuat sebagai demo implementasi live chat fullstack dengan autentikasi sederhana, penyimpanan pesan, dan live update antar-user.
+Simple fullstack chat app built with **Next.js App Router**, **Prisma**, and **MySQL**. Project ini sekarang memakai session cookie + polling untuk update chat, jadi aman dijalankan lokal maupun di-deploy ke Vercel tanpa custom WebSocket server.
 
----
+Demo login tetap sederhana, message tersimpan di database, dan histori chat bisa dibuka lagi kapan pun.
 
-Gw ada buat demo nya, yang pake method broadcast tapi nya lo bisa liat di branch broadcast ini sama. untuk akses user nya udah ada dihalaman login nya tinggal copas aja udah bisa login, ini link demo nya : [Live Chat Demo](https://live-chat-three-pi.vercel.app/)
+## Features
 
-## 🚀 Features
+- Login dengan cookie session berbasis JWT
+- Daftar user dan histori chat tersimpan di MySQL
+- Kirim pesan lewat Next.js Route Handlers
+- Update chat berkala dari client dengan polling
+- Prisma ORM untuk schema dan query database
 
-* 🔌 Realtime messaging menggunakan WebSocket
-* 🔐 Autentikasi user sederhana
-* 💾 Chat history tersimpan di PostgreSQL
-* ⚡ Next.js Route Handlers untuk API
-* 🟦 Prisma ORM
-* 🎨 UI sederhana & responsif
+## Setup
 
----
-
-## 📦 Installation & Setup
-
-Ikuti langkah-langkah berikut setelah melakukan **clone** repository.
-
----
-
-## 1️⃣ Clone Repository
+1. Clone repository
 
 ```bash
 git clone https://github.com/Thoriq0/live-chat.git
 cd live-chat
 ```
 
----
-
-## 2️⃣ Buat `.env` berdasarkan `.env.example`
+2. Buat file `.env`
 
 ```bash
 cp .env.example .env
 ```
 
-Lalu isi `.env` seperti berikut (sesuaikan):
+Isi `.env` sesuai environment kamu. Contoh lokal:
 
 ```env
-DATABASE_URL="postgresql://USER:PASSWORD@HOST/livechat"
-NEXT_PUBLIC_JWT_SECRET="your-secret-key"
+DATABASE_URL="mysql://root:root@127.0.0.1:3306/livechat"
+JWT_SECRET="ganti_dengan_secret_random_yang_panjang"
 NEXT_PUBLIC_BASE_URL="http://localhost:3000"
 NODE_ENV="development"
 ```
 
-> Pastikan database `livechat` sudah dibuat.
-
----
-
-## 3️⃣ Install Dependencies
+3. Install dependency
 
 ```bash
 npm install
 ```
 
----
-
-## 4️⃣ Setup Prisma
-
-### Generate Prisma Client
-
-```bash
-npx prisma generate
-```
-
-### Push Schema ke Database
+4. Sinkronkan schema Prisma ke database
 
 ```bash
 npx prisma db push
 ```
 
-### Jalankan Seeder
-
-Seeder default nya ada 3 user (`thoriq`, `ahmad`, `husian`) dengan password:
-
-```
-password123
-```
-
-kalo pengen ingin custom password, pake `hash.js` yang ada di root, jangan lupa ubah value nya abis itu jalanin buat dapet bcrypt nya:
+5. Seed user demo
 
 ```bash
-node hash.js
-```
-
-custome username nya ada di `prisma/seed.js`
-
-kalo udah jalankan seeder:
-
-```bash
-npx prisma db seed
-# atau
 node prisma/seed.js
 ```
 
----
+User default:
 
-## 5️⃣ Jalankan WebSocket Server
+- `thoriq` / `password123`
+- `ahmad` / `password123`
+- `husain` / `password123`
 
-Di terminal terpisah:
-
-```bash
-node websocket-server.js
-```
-
-WebSocket berjalan di:
-
-```
-ws://localhost:8080
-```
-
----
-
-## 6️⃣ Jalankan Next.js
+6. Jalankan project
 
 ```bash
 npm run dev
 ```
 
-Aplikasi berjalan di:
+App akan jalan di `http://localhost:3000`.
 
-```
-http://localhost:3000
-```
+## Catatan
 
----
+- Project ini sekarang tidak membutuhkan `websocket-server.js` untuk flow utama aplikasi.
+- Kalau schema Prisma berubah, jalankan lagi `npx prisma db push`.
+- Untuk generate Prisma client manual, pakai `npx prisma generate`.
+- Logout sudah tersedia langsung di UI chat.
 
-## 📂 Folder Structure
+## Struktur Singkat
 
-```
+```text
 live-chat/
-├── .env.example
-├── websocket-server.js # WebSocket backend
 ├── prisma/
-│ ├── schema.prisma # Database schema
-│ └── migrations/ # (Optional) migration history
+│   ├── schema.prisma
+│   └── seed.js
 ├── src/
-│ ├── app/
-│ │ ├── api/ # API Route Handlers
-│ │ ├── login/ # Login page
-│ │ └── page.js # Main chat page
-│ ├── lib/
-│ │ └── prismadb.js # Prisma client instance
-│ └── generated/ # Auto-generated Prisma client
+│   ├── app/
+│   │   ├── api/
+│   │   ├── login/
+│   │   └── page.jsx
+│   └── lib/
 ├── public/
-│ └── assets
+├── .env.example
 ├── package.json
-├── next.config.mjs
 └── README.md
 ```
-
----
-
-## ✔ Ready to Develop
-
-Jalankan dua terminal:
-
-**Terminal 1**
-
-```bash
-npm run dev
-```
-
-**Terminal 2**
-
-```bash
-node websocket-server.js
-```
-
-Aplikasi siap digunakan.
-
----
-
-## 📝 Notes
-
-* WebSocket **wajib** berjalan untuk realtime message.
-* Jika schema berubah:
-
-```bash
-npx prisma db push
-```
-
-* Untuk reset database + seed:
-
-```bash
-npx prisma migrate reset
-```
-
-* Belum ada fitur logout sama handle gagal login gw lupa buat wkwkwkk 🤣. buat sign-out nya, cukup **hapus cookie token**.

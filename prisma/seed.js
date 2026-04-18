@@ -1,8 +1,11 @@
 import { PrismaClient } from "../src/generated/prisma/index.js";
+
 const prisma = new PrismaClient();
 
 async function main() {
+   await prisma.message.deleteMany();
    await prisma.user.deleteMany();
+
    await prisma.user.createMany({
       data: [
          {
@@ -25,5 +28,5 @@ async function main() {
 }
 
 main()
-   .catch(e => console.error(e))
+   .catch((e) => console.error(e))
    .finally(async () => await prisma.$disconnect());
