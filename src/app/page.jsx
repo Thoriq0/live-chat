@@ -1,118 +1,228 @@
 "use client";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
+import { useRouter } from "next/navigation";
+
+const POLL_INTERVAL_MS = 3000;
 
 export default function MainChatPage() {
+  const router = useRouter();
   const [users, setUsers] = useState([]);
   const [selectedUser, setSelectedUser] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [message, setMessage] = useState("");
   const [receivedMessages, setReceivedMessages] = useState([]);
   const [myId, setMyId] = useState(null);
+  const [myUsername, setMyUsername] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
+  const [pageError, setPageError] = useState("");
+  const [historyError, setHistoryError] = useState("");
+  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  const [sendError, setSendError] = useState("");
 
   // get user & list user
   useEffect(() => {
     async function fetchUsers() {
-      const [usersRes, meRes] = await Promise.all([
-        fetch("/api/users"),
-        fetch("/api/me", { credentials: "include" }),
-      ]);
+      setPageError("");
+      setIsBootstrapping(true);
 
-      const [allUsers, me] = await Promise.all([
-        usersRes.json(),
-        meRes.json(),
-      ]);
+      try {
+        const meRes = await fetch("/api/me", {
+          credentials: "include",
+          cache: "no-store",
+        });
 
-      setMyId(me.id);
+        if (meRes.status === 401) {
+          router.replace("/login");
+          return;
+        }
 
-      const otherUsers = allUsers.filter((u) => u.id !== me.id);
-      setUsers(otherUsers);
+        if (!meRes.ok) {
+          throw new Error("Gagal mengambil data user");
+        }
 
-      if (otherUsers.length > 0) setSelectedUser(otherUsers[0]);
+        const me = await meRes.json();
+        setMyId(me.id);
+        setMyUsername(me.username);
+
+        const usersRes = await fetch("/api/users", {
+          credentials: "include",
+          cache: "no-store",
+        });
+
+        if (usersRes.status === 401) {
+          router.replace("/login");
+          return;
+        }
+
+        if (!usersRes.ok) {
+          throw new Error("Gagal mengambil daftar user");
+        }
+
+        const allUsers = await usersRes.json();
+        setUsers(allUsers);
+        setSelectedUser((currentSelectedUser) => {
+          if (currentSelectedUser) {
+            return allUsers.find((u) => u.id === currentSelectedUser.id) || allUsers[0] || null;
+          }
+
+          return allUsers[0] || null;
+        });
+      } catch (error) {
+        setPageError(error.message || "Terjadi kesalahan saat memuat halaman");
+      } finally {
+        setIsBootstrapping(false);
+      }
     }
 
     fetchUsers();
-  }, []);
+  }, [router]);
 
-  // WS Connection
-  const socketRef = useRef(null);
+  const loadHistory = useEffectEvent(async (userId) => {
+    setHistoryError("");
+    setIsHistoryLoading(true);
 
-  useEffect(() => {
-  if (!myId) return;
-
-  const socket = new WebSocket("ws://localhost:8080");
-  socketRef.current = socket;
-
-  socket.addEventListener("open", () => {
-    socket.send(JSON.stringify({ type: "auth", userId: myId }));
-  });
-
-  socket.addEventListener("message", (event) => {
     try {
-      const data = JSON.parse(event.data);
+      const res = await fetch(`/api/messages?userId=${userId}`, {
+        credentials: "include",
+        cache: "no-store",
+      });
 
-      if (data.type === "auth_ok") {
-        console.log("WS authenticated as:", data.userId);
+      if (res.status === 401) {
+        router.replace("/login");
         return;
       }
 
-      if (data.type === "auth_error") {
-        console.error("WS: auth error");
-        return;
+      if (!res.ok) {
+        throw new Error("Gagal memuat riwayat chat");
       }
 
-      if (data.type === "message") {
-        setReceivedMessages(prev => [...prev, data]); // realtime append
-      }
-    } catch (e) {
-      console.error("Invalid WS message:", event.data);
+      const data = await res.json();
+      const normalized = data.map((m) => ({
+        type: "message",
+        from: m.senderId,
+        to: m.receiverId,
+        content: m.content,
+        createdAt: m.createdAt,
+      }));
+
+      setReceivedMessages(normalized);
+    } catch (error) {
+      setHistoryError(error.message || "Riwayat chat tidak bisa dimuat");
+    } finally {
+      setIsHistoryLoading(false);
     }
   });
 
-  return () => socket.close();
-}, [myId]);
+  const handleLogout = async () => {
+    if (isLoggingOut) return;
 
+    setIsLoggingOut(true);
+
+    try {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        credentials: "include",
+      });
+    } finally {
+      router.replace("/login");
+      router.refresh();
+    }
+  };
 
   // Send Message
-  const handleSend = (e) => {
+  const handleSend = async (e) => {
     e.preventDefault();
-    if (!message.trim() || !selectedUser) return;
+    const trimmedMessage = message.trim();
+    setSendError("");
 
-    const data = {
-      type: "message",
-      from: myId,
-      to: selectedUser.id,
-      content: message,
-    };
+    if (!trimmedMessage || !selectedUser || isSending) return;
 
-    socketRef.current?.send(JSON.stringify(data));
-    setMessage("");
+    setIsSending(true);
+
+    try {
+      const res = await fetch("/api/messages", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          to: selectedUser.id,
+          content: trimmedMessage,
+        }),
+      });
+
+      if (res.status === 401) {
+        router.replace("/login");
+        return;
+      }
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setSendError(data.error || "Gagal kirim pesan");
+        return;
+      }
+
+      const createdMessage = await res.json();
+
+      setReceivedMessages((prev) => [
+        ...prev,
+        {
+          type: "message",
+          from: createdMessage.senderId,
+          to: createdMessage.receiverId,
+          content: createdMessage.content,
+          createdAt: createdMessage.createdAt,
+        },
+      ]);
+      setMessage("");
+    } catch {
+      setSendError("Tidak bisa mengirim pesan sekarang");
+    } finally {
+      setIsSending(false);
+    }
   };
 
   // chat history
   useEffect(() => {
     if (!selectedUser || !myId) return;
+    loadHistory(selectedUser.id);
 
-    async function loadHistory() {
-      const res = await fetch(
-        `/api/messages?userA=${myId}&userB=${selectedUser.id}`
-      );
+    const intervalId = window.setInterval(() => {
+      loadHistory(selectedUser.id);
+    }, POLL_INTERVAL_MS);
 
-      const data = await res.json();
-
-      // Normalisasi
-      const normalized = data.map(m => ({
-        type: "message",
-        from: m.senderId,
-        to: m.receiverId,
-        content: m.content,
-        createdAt: m.createdAt
-      }));
-
-      setReceivedMessages(normalized);
-    }
-
-    loadHistory();
+    return () => window.clearInterval(intervalId);
   }, [selectedUser, myId]);
+
+  if (isBootstrapping) {
+    return (
+      <div className="min-h-screen bg-gray-900 px-4 py-10 text-gray-100">
+        <div className="mx-auto max-w-xl rounded-2xl border border-gray-800 bg-gray-800/80 p-6 shadow-lg">
+          <h1 className="text-xl font-semibold">Memuat chat...</h1>
+          <p className="mt-2 text-sm text-gray-400">Tunggu sebentar, kita lagi ambil data akun dan percakapan kamu.</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (pageError) {
+    return (
+      <div className="min-h-screen bg-gray-900 px-4 py-10 text-gray-100">
+        <div className="mx-auto max-w-xl rounded-2xl border border-red-500/30 bg-red-500/10 p-6 shadow-lg">
+          <h1 className="text-xl font-semibold text-red-100">Halaman gagal dimuat</h1>
+          <p className="mt-2 text-sm text-red-200/90">{pageError}</p>
+          <button
+            type="button"
+            onClick={() => router.refresh()}
+            className="mt-4 rounded-lg bg-red-500 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-400"
+          >
+            Coba lagi
+          </button>
+        </div>
+      </div>
+    );
+  }
 
 
   return (
@@ -123,7 +233,20 @@ export default function MainChatPage() {
           sidebarOpen ? "" : "hidden sm:block"
         }`}
       >
-        <h2 className="text-xl font-bold mb-4">Chats</h2>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-xl font-bold">Chats</h2>
+            <p className="text-sm text-gray-400">{myUsername || "Loading user..."}</p>
+          </div>
+          <button
+            type="button"
+            onClick={handleLogout}
+            disabled={isLoggingOut}
+            className="rounded-lg border border-gray-600 px-3 py-2 text-sm text-gray-200 transition hover:bg-gray-800 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {isLoggingOut ? "Logging out..." : "Logout"}
+          </button>
+        </div>
         {users.map((u) => (
           <div
             key={u.id}
@@ -152,6 +275,26 @@ export default function MainChatPage() {
 
         {/* Messages Area */}
         <div className="flex-1 p-4 overflow-y-auto flex flex-col gap-3 min-h-0">
+          {historyError ? (
+            <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200">
+              {historyError}
+            </div>
+          ) : null}
+          {!historyError && isHistoryLoading ? (
+            <div className="rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-gray-300">
+              Memuat riwayat chat...
+            </div>
+          ) : null}
+          {!selectedUser ? (
+            <div className="rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-gray-300">
+              Belum ada lawan chat yang dipilih.
+            </div>
+          ) : null}
+          {selectedUser && !isHistoryLoading && !historyError && receivedMessages.length === 0 ? (
+            <div className="rounded-xl border border-gray-700 bg-gray-800 px-4 py-3 text-sm text-gray-300">
+              Belum ada pesan dengan {selectedUser.username}. Kirim pesan pertama buat mulai obrolan.
+            </div>
+          ) : null}
           {receivedMessages
             .filter(
               (msg) =>
@@ -179,20 +322,28 @@ export default function MainChatPage() {
         {/* Input */}
         <form
           onSubmit={handleSend}
-          className="p-4 border-t border-gray-700 flex items-center gap-3"
+          className="p-4 border-t border-gray-700"
         >
-          <input
-            className="flex-1 px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 focus:outline-none"
-            placeholder="Ketik pesan..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-          />
-          <button
-            type="submit"
-            className="p-3 rounded-full bg-blue-600 hover:bg-blue-500 transition"
-          >
-            ✈️
-          </button>
+          {sendError ? (
+            <div className="mb-3 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-200">
+              {sendError}
+            </div>
+          ) : null}
+          <div className="flex items-center gap-3">
+            <input
+              className="flex-1 px-3 py-2 rounded-xl bg-gray-800 border border-gray-700 focus:outline-none"
+              placeholder="Ketik pesan..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+            />
+            <button
+              type="submit"
+              disabled={!selectedUser || isSending}
+              className="p-3 rounded-full bg-blue-600 hover:bg-blue-500 transition disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              ✈️
+            </button>
+          </div>
         </form>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import prisma from "@/lib/prisma";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
+import { signSessionToken } from "@/lib/auth";
 
 
 export async function POST(req) {
@@ -24,9 +24,8 @@ export async function POST(req) {
     }
 
     // Generate JWT
-    const token = jwt.sign(
+    const token = signSessionToken(
       { id: user.id, username: user.username },
-      process.env.NEXT_PUBLIC_JWT_SECRET || "SECRET_KEY",
       { expiresIn: "7d" }
     );
 
@@ -36,6 +35,7 @@ export async function POST(req) {
       httpOnly: true,
       path: "/",
       secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
       maxAge: 7 * 24 * 60 * 60, // 7 hari
     });
 
@@ -45,4 +45,3 @@ export async function POST(req) {
     return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
   }
 }
-
